@@ -1,4 +1,21 @@
+--
+-- Vadim Vinnik, 2016-17
+-- vadim.vinnik@gmail.com
+--
+
+{- |
+Refal (acronym for REcursive Functional ALgorithmic language) is a specialised
+language for symbol manipulation (string processing, parsing, translation, text
+generation etc.) based on pattern matching, designed in the Soviet Union by
+V.F.Turchin in 1960's.
+
+This library provides a semantical engine for executing programs in generalised
+Refal where data need not to be ASCII strings but can be combined from any kind
+of discrete objects, the same holds for variable and function names.
+-}
+
 module Refal (
+    -- * Types
     Term,
     ObjectTerm,
     PatternTerm,
@@ -10,6 +27,7 @@ module Refal (
     MatchState,
     FuncDef,
 
+    -- * Expression conversions
     objectToPatternTerm,
     patternToActiveTerm,
     objectToActiveTerm,
@@ -17,6 +35,7 @@ module Refal (
     patternToActiveExpr,
     objectToActiveExpr,
 
+    -- * Semantics
     subst,
     eval
 ) where
