@@ -1,3 +1,26 @@
+module Refal (
+    Term,
+    ObjectTerm,
+    PatternTerm,
+    ActiveTerm,
+    Expr,
+    ObjectExpr,
+    PatternExpr,
+    ActiveExpr,
+    MatchState,
+    FuncDef,
+
+    objectToPatternTerm,
+    patternToActiveTerm,
+    objectToActiveTerm,
+    objectToPatternExpr,
+    patternToActiveExpr,
+    objectToActiveExpr,
+
+    subst,
+    eval
+) where
+
 import Data.String.ToString
 import Data.Map (Map, (!), empty, insert)
 
@@ -55,32 +78,23 @@ instance Monad Expr where
     bindExprHelper (Item x) = f x
     bindExprHelper (Block e1) = Expr [Block (e1 >>= f)]
 
-objectToPatternItem :: ObjectItem a -> PatternItem v a
-objectToPatternItem = ObjectItem
-
-patternToActiveItem :: PatternItem v a -> ActiveItem f v a
-patternToActiveItem = PatternItem
-
-objectToActiveItem :: ObjectItem a -> ActiveItem f v a
-objectToActiveItem = patternToActiveItem . objectToPatternItem
-
 objectToPatternTerm :: ObjectTerm a -> PatternTerm v a
-objectToPatternTerm = fmap objectToPatternItem
+objectToPatternTerm = fmap ObjectItem
 
 patternToActiveTerm :: PatternTerm v a -> ActiveTerm f v a
-patternToActiveTerm = fmap patternToActiveItem
+patternToActiveTerm = fmap PatternItem
 
 objectToActiveTerm :: ObjectTerm a -> ActiveTerm f v a
-objectToActiveTerm = fmap objectToActiveItem
+objectToActiveTerm = fmap (PatternItem . ObjectItem)
 
 objectToPatternExpr :: ObjectExpr a -> PatternExpr v a
-objectToPatternExpr = fmap objectToPatternItem
+objectToPatternExpr = fmap ObjectItem
 
 patternToActiveExpr :: PatternExpr v a -> ActiveExpr f v a
-patternToActiveExpr = fmap patternToActiveItem
+patternToActiveExpr = fmap PatternItem
 
 objectToActiveExpr :: ObjectExpr a -> ActiveExpr f v a
-objectToActiveExpr = fmap objectToActiveItem
+objectToActiveExpr = fmap (PatternItem . ObjectItem)
 
 -- TODO: pass conversion parameters - string representations of
 -- opening and closing brackets, variable prefixes
