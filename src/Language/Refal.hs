@@ -42,14 +42,15 @@ module Language.Refal (
 
 import Data.String.ToString
 import Data.Map as M hiding (map)
+import Data.List as L hiding (map, insert)
 
 newtype Expr a = Expr { fromExpr :: [Term a] }
-  deriving (Show)
+  deriving (Show, Eq)
 
 data Term a
   = Item a
   | Block (Expr a)
-  deriving (Show)
+  deriving (Show, Eq)
 
 type ObjectExpr a = Expr (ObjectItem a)
 type PatternExpr v a = Expr (PatternItem v a)
@@ -66,12 +67,12 @@ data PatternItem v a
   | AtomVar v
   | TermVar v
   | ExprVar v
-  deriving (Show)
+  deriving (Show, Eq)
 
 data ActiveItem f v a
   = PatternItem (PatternItem v a)
   | FunctionCall f (ActiveExpr f v a)
-  deriving (Show)
+  deriving (Show, Eq)
 
 data MatchState v a = MatchState {
   atoms :: Map v a,
@@ -79,7 +80,9 @@ data MatchState v a = MatchState {
   exprs :: Map v (ObjectExpr a)
 }
 
-newtype FuncDef f a = FuncDef { getFuncDef ::  Map f (ObjectExpr a -> ObjectExpr a) }
+newtype FuncDef f a = FuncDef {
+  getFuncDef :: Map f (ObjectExpr a -> ObjectExpr a)
+}
 
 instance Functor Term where
   fmap f (Item a) = Item (f a)
@@ -159,15 +162,24 @@ matchTerm :: (Ord v, Eq a) => MatchState v a -> PatternTerm v a -> ObjectExpr a 
 matchTerm m (Item (ObjectItem x)) (Expr ((Item y):ts))
   | x == y     = [(m, Expr ts)]
   | otherwise  = []
-matchTerm m (Item (ObjectItem _)) _ = []
-matchTerm m (Item (AtomVar v)) (Expr ((Item y):ts)) = maybe
-  [(m { atoms = insert v y $ atoms m }, Expr ts)]
-  (\x -> if x == y then [(m, Expr ts)] else [])
-  (M.lookup v $ atoms m)
--- TODO: matchTerm for t- and e-variables
+matchTerm m (Item (AtomVar v)) (Expr ((Item y):ts)) =
+  maybe
+    [(m { atoms = insert v y $ atoms m }, Expr ts)]
+    (\x -> if x == y then [(m, Expr ts)] else [])
+    (M.lookup v $ atoms m)
+matchTerm m (Item (TermVar v)) (Expr (t:ts)) =
+  maybe
+    [(m { terms = insert v t $ terms m }, Expr ts)]
+    (\x -> if x == t then [(m, Expr ts)] else [])
+    (M.lookup v $ terms m)
+matchTerm m (Item (ExprVar v)) (Expr ts) =
+  maybe
+    (map (\(p, q) -> (m { exprs = insert v (Expr p) $ exprs m }, Expr q)) $ allSplits ts)
+    (\(Expr ps) -> maybe [] (\rs -> [(m, Expr rs)]) $ stripPrefix ps ts)
+    (M.lookup v $ exprs m)
 matchTerm m (Block p) (Expr ((Block e):ts)) =
-  map (($(Expr ts)) . (,)) $ matchWithState m p e
-matchTerm m (Block _) _ = []
+  map (\n -> (n, Expr ts)) $ matchWithState m p e
+matchTerm _ _ _ = []
 
 matchWithState :: (Ord v, Eq a) => MatchState v a -> PatternExpr v a -> ObjectExpr a -> [MatchState v a]
 matchWithState m p e = undefined -- TODO
@@ -175,3 +187,6 @@ matchWithState m p e = undefined -- TODO
 match :: (Ord v, Eq a) => PatternExpr v a -> ObjectExpr a -> [MatchState v a]
 match = matchWithState emptyMatchState
 
+allSplits :: [a] -> [([a], [a])]
+allSplits [] = [([], [])]
+allSplits l@(x:xs) = ([], l) : (map (\(p, q) -> (x:p, q)) $ allSplits xs)
