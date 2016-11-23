@@ -158,7 +158,12 @@ eval d m e = e >>= evalActiveItem d m
 emptyMatchState :: MatchState v a
 emptyMatchState = MatchState {atoms = empty, terms = empty, exprs = empty}
 
-matchTerm :: (Ord v, Eq a) => MatchState v a -> PatternTerm v a -> ObjectExpr a -> [(MatchState v a, ObjectExpr a)]
+matchTerm
+  :: (Ord v, Eq a)
+  => MatchState v a
+  -> PatternTerm v a
+  -> ObjectExpr a
+  -> [(MatchState v a, ObjectExpr a)]
 matchTerm m (Item (ObjectItem x)) (Expr ((Item y):ts))
   | x == y     = [(m, Expr ts)]
   | otherwise  = []
@@ -182,7 +187,10 @@ matchTerm m (Block p) (Expr ((Block e):ts)) =
 matchTerm _ _ _ = []
 
 matchWithState :: (Ord v, Eq a) => MatchState v a -> PatternExpr v a -> ObjectExpr a -> [MatchState v a]
-matchWithState m p e = undefined -- TODO
+matchWithState m (Expr []) (Expr []) = [m]
+matchWithState m (Expr (p:ps)) e =
+  (matchTerm m p e) >>= (\(n, r) -> matchWithState n (Expr ps) r)
+matchWithState _ _ _ = []
 
 match :: (Ord v, Eq a) => PatternExpr v a -> ObjectExpr a -> [MatchState v a]
 match = matchWithState emptyMatchState
