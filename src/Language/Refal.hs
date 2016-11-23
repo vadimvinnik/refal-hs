@@ -37,7 +37,10 @@ module Language.Refal (
 
     -- * Semantics
     subst,
-    eval
+    eval,
+
+    -- * Engine
+    match
 ) where
 
 import Data.String.ToString
@@ -78,7 +81,7 @@ data MatchState v a = MatchState {
   atoms :: Map v a,
   terms :: Map v (ObjectTerm a),
   exprs :: Map v (ObjectExpr a)
-}
+} deriving (Show)
 
 newtype FuncDef f a = FuncDef {
   getFuncDef :: Map f (ObjectExpr a -> ObjectExpr a)
