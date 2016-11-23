@@ -14,7 +14,7 @@ Refal where data need not to be ASCII strings but can be combined from any kind
 of discrete objects, the same holds for variable and function names.
 -}
 
-module Refal (
+module Language.Refal (
     -- * Types
     Term,
     ObjectTerm,
@@ -41,7 +41,7 @@ module Refal (
 ) where
 
 import Data.String.ToString
-import Data.Map (Map, (!), empty, insert)
+import Data.Map as M hiding (map)
 
 newtype Expr a = Expr { fromExpr :: [Term a] }
   deriving (Show)
@@ -152,5 +152,26 @@ evalActiveItem d m (FunctionCall f e) = ((getFuncDef d) ! f) (eval d m e)
 eval :: (Ord v, Ord f) => FuncDef f a -> MatchState v a -> ActiveExpr f v a -> ObjectExpr a
 eval d m e = e >>= evalActiveItem d m
 
--- matcher: produces a list of match contexts
+emptyMatchState :: MatchState v a
+emptyMatchState = MatchState {atoms = empty, terms = empty, exprs = empty}
+
+matchTerm :: (Ord v, Eq a) => MatchState v a -> PatternTerm v a -> ObjectExpr a -> [(MatchState v a, ObjectExpr a)]
+matchTerm m (Item (ObjectItem x)) (Expr ((Item y):ts))
+  | x == y     = [(m, Expr ts)]
+  | otherwise  = []
+matchTerm m (Item (ObjectItem _)) _ = []
+matchTerm m (Item (AtomVar v)) (Expr ((Item y):ts)) = maybe
+  [(m { atoms = insert v y $ atoms m }, Expr ts)]
+  (\x -> if x == y then [(m, Expr ts)] else [])
+  (M.lookup v $ atoms m)
+-- TODO: matchTerm for t- and e-variables
+matchTerm m (Block p) (Expr ((Block e):ts)) =
+  map (($(Expr ts)) . (,)) $ matchWithState m p e
+matchTerm m (Block _) _ = []
+
+matchWithState :: (Ord v, Eq a) => MatchState v a -> PatternExpr v a -> ObjectExpr a -> [MatchState v a]
+matchWithState m p e = undefined -- TODO
+
+match :: (Ord v, Eq a) => PatternExpr v a -> ObjectExpr a -> [MatchState v a]
+match = matchWithState emptyMatchState
 

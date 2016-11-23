@@ -4,22 +4,27 @@
 name:                refal-hs
 version:             0.1.0.0
 synopsis:            Refal (functional language for string processing) embedded semantical engine
--- description:         
+description:         
+    Refal (acronym for REcursive Functional ALgorithmic language) is a specialised
+    language for symbol manipulation (string processing, parsing, translation, text
+    generation etc.) based on pattern matching, designed in the Soviet Union by
+    V.F.Turchin in 1960's.
+
+    This library provides a semantical engine for executing programs in generalised
+    Refal where data need not to be ASCII strings but can be combined from any kind
+    of discrete objects, the same holds for variable and function names.
 homepage:            https://github.com/vadimvinnik/refal-hs
 license:             MIT
 license-file:        LICENSE
 author:              Vadim Vinnik
 maintainer:          vadim.vinnik@gmail.com
--- copyright:           
+copyright:           Vadim Vinnik, 2016-17
 category:            Language
 build-type:          Simple
--- extra-source-files:  
 cabal-version:       >=1.10
 
 library
   exposed-modules:     Language.Refal
-  -- other-modules:       
-  -- other-extensions:    
   build-depends:       base >=4.8 && <4.9, tostring >=0.2 && <0.3, containers >=0.5 && <0.6
   hs-source-dirs:      src
   default-language:    Haskell2010
