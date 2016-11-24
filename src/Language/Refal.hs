@@ -16,16 +16,19 @@ of discrete objects, the same holds for variable and function names.
 
 module Language.Refal (
     -- * Types
-    Term,
-    ObjectTerm,
-    PatternTerm,
-    ActiveTerm,
-    Expr,
-    ObjectExpr,
-    PatternExpr,
-    ActiveExpr,
-    MatchState,
-    FuncDef,
+    ObjectItem(..),
+    PatternItem(..),
+    ActiveItem(..),
+    Term(..),
+    ObjectTerm(..),
+    PatternTerm(..),
+    ActiveTerm(..),
+    Expr(..),
+    ObjectExpr(..),
+    PatternExpr(..),
+    ActiveExpr(..),
+    MatchState(..),
+    FuncDef(..),
 
     -- * Expression conversions
     objectToPatternTerm,
@@ -128,20 +131,20 @@ objectToActiveExpr = fmap (PatternItem . ObjectItem)
 -- opening and closing brackets, variable prefixes
 instance (ToString a) => ToString (Term a) where
   toString (Item a) = toString a
-  toString (Block ts) = "(" ++ (toString $ fromExpr ts) ++ ")"
+  toString (Block ts) = "(" ++ (toString ts) ++ ")"
 
-instance (ToString a) => ToString [a] where -- [a] = (Expr a)
-  toString = concat . map toString
+instance (ToString a) => ToString (Expr a) where
+  toString = concat . map toString . fromExpr
 
 instance (ToString v, ToString a) => ToString (PatternItem v a) where
   toString (ObjectItem i) = toString i
-  toString (AtomVar v) = "s." ++ (toString v)
-  toString (TermVar v) = "t." ++ (toString v)
-  toString (ExprVar v) = "e." ++ (toString v)
+  toString (AtomVar v) = " s." ++ (toString v) ++ " "
+  toString (TermVar v) = " t." ++ (toString v) ++ " "
+  toString (ExprVar v) = " e." ++ (toString v) ++ " "
 
 instance (ToString f, ToString v, ToString a) => ToString (ActiveItem f v a) where
   toString (PatternItem i) = toString i
-  toString (FunctionCall f e) = "<" ++ (toString f) ++ " " ++ (toString $ fromExpr e) ++ ">"
+  toString (FunctionCall f e) = " <" ++ (toString f) ++ " " ++ (toString e) ++ "> "
 
 -- TODO: Parsers for the 3 expression types
 
