@@ -47,6 +47,9 @@ import Data.String.ToString
 import Data.Map as M hiding (map)
 import Data.List as L hiding (map, insert)
 
+import Utils.CharToString
+import Utils.AllSplits
+
 newtype Expr a = Expr { fromExpr :: [Term a] }
   deriving (Show, Eq)
 
@@ -197,7 +200,3 @@ matchWithState _ _ _ = []
 
 match :: (Ord v, Eq a) => PatternExpr v a -> ObjectExpr a -> [MatchState v a]
 match = matchWithState emptyMatchState
-
-allSplits :: [a] -> [([a], [a])]
-allSplits [] = [([], [])]
-allSplits l@(x:xs) = ([], l) : (map (\(p, q) -> (x:p, q)) $ allSplits xs)
