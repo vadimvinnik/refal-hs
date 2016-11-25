@@ -27,8 +27,11 @@ module Language.Refal (
     ObjectExpr(..),
     PatternExpr(..),
     ActiveExpr(..),
+    Sentence(..),
+    FunctionBody(..),
+    Module(..),
     MatchState(..),
-    FuncDef(..),
+    Semantics(..),
 
     -- * Expression conversions
     objectToPatternTerm,
@@ -83,14 +86,27 @@ data ActiveItem f v a
   | FunctionCall f (ActiveExpr f v a)
   deriving (Show, Eq)
 
+data Sentence f v a = Sentence {
+  pattern  :: PatternExpr v a,
+  template :: ActiveExpr f v a
+}
+
+newtype FunctionBody f v a = FunctionBody {
+  sentences :: [Sentence f v a]
+}
+
+newtype Module f v a = Module {
+  functions :: Map f (FunctionBody f v a)
+}
+
 data MatchState v a = MatchState {
   atoms :: Map v a,
   terms :: Map v (ObjectTerm a),
   exprs :: Map v (ObjectExpr a)
 } deriving (Show)
 
-newtype FuncDef f a = FuncDef {
-  getFuncDef :: Map f (ObjectExpr a -> ObjectExpr a)
+newtype Semantics f a = Semantics {
+  semantics :: Map f (ObjectExpr a -> ObjectExpr a)
 }
 
 instance Functor Term where
@@ -157,11 +173,11 @@ substPatternItem m (ExprVar v) = (exprs m) ! v
 subst :: Ord v => MatchState v a -> PatternExpr v a -> ObjectExpr a
 subst m e = e >>= substPatternItem m
 
-evalActiveItem :: (Ord v, Ord f) => FuncDef f a -> MatchState v a -> ActiveItem f v a -> ObjectExpr a
+evalActiveItem :: (Ord v, Ord f) => Semantics f a -> MatchState v a -> ActiveItem f v a -> ObjectExpr a
 evalActiveItem d m (PatternItem p) = substPatternItem m p
-evalActiveItem d m (FunctionCall f e) = ((getFuncDef d) ! f) (eval d m e)
+evalActiveItem d m (FunctionCall f e) = ((semantics d) ! f) (eval d m e)
 
-eval :: (Ord v, Ord f) => FuncDef f a -> MatchState v a -> ActiveExpr f v a -> ObjectExpr a
+eval :: (Ord v, Ord f) => Semantics f a -> MatchState v a -> ActiveExpr f v a -> ObjectExpr a
 eval d m e = e >>= evalActiveItem d m
 
 emptyMatchState :: MatchState v a
