@@ -52,6 +52,8 @@ module Language.Refal (
 import Data.String.ToString
 import Data.Map as M hiding (map)
 import Data.List as L hiding (map, insert)
+import Data.Maybe (listToMaybe)
+import Control.Monad (msum)
 
 import Utils.CharToString
 import Utils.AllSplits
@@ -219,3 +221,9 @@ matchWithState _ _ _ = []
 
 match :: (Ord v, Eq a) => PatternExpr v a -> ObjectExpr a -> [MatchState v a]
 match = matchWithState emptyMatchState
+
+applySentence :: (Ord f, Ord v, Eq a) => Semantics f a -> Sentence f v a -> ObjectExpr a -> Maybe (ObjectExpr a)
+applySentence d (Sentence p t) e = fmap (\m -> eval d m t) (listToMaybe $ match p e)
+
+applyFunctionBody :: (Ord f, Ord v, Eq a) => Semantics f a -> FunctionBody f v a -> ObjectExpr a -> Maybe (ObjectExpr a)
+applyFunctionBody d b e = msum $ map (\s -> applySentence d s e) $ sentences b
