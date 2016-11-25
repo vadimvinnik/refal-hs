@@ -232,3 +232,7 @@ applyFunctionBody d b e = fromJust $ msum $ map (\s -> applySentence d s e) $ se
 interpretModule :: (Ord f, Ord v, Eq a) => Module f v a -> Semantics f a
 interpretModule (Module m) = d where -- fixed point
   d = Semantics $ M.empty `M.union` M.map (applyFunctionBody d) m
+
+evalFunctionCall :: (Ord f, Ord v, Eq a) => Module f v a -> f -> ObjectExpr a -> ObjectExpr a
+evalFunctionCall m f e = ((semantics $ interpretModule m) ! f) e
+
