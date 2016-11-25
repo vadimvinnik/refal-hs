@@ -50,9 +50,10 @@ module Language.Refal (
 ) where
 
 import Data.String.ToString
-import Data.Map as M hiding (map)
-import Data.List as L hiding (map, insert)
-import Data.Maybe (listToMaybe)
+import Data.Map ((!))
+import qualified Data.Map as M
+import qualified Data.List as L
+import Data.Maybe (listToMaybe, fromJust)
 import Control.Monad (msum)
 
 import Utils.CharToString
@@ -98,17 +99,17 @@ newtype FunctionBody f v a = FunctionBody {
 }
 
 newtype Module f v a = Module {
-  functions :: Map f (FunctionBody f v a)
+  functions :: M.Map f (FunctionBody f v a)
 }
 
 data MatchState v a = MatchState {
-  atoms :: Map v a,
-  terms :: Map v (ObjectTerm a),
-  exprs :: Map v (ObjectExpr a)
+  atoms :: M.Map v a,
+  terms :: M.Map v (ObjectTerm a),
+  exprs :: M.Map v (ObjectExpr a)
 } deriving (Show)
 
 newtype Semantics f a = Semantics {
-  semantics :: Map f (ObjectExpr a -> ObjectExpr a)
+  semantics :: M.Map f (ObjectExpr a -> ObjectExpr a)
 }
 
 instance Functor Term where
@@ -183,7 +184,7 @@ eval :: (Ord v, Ord f) => Semantics f a -> MatchState v a -> ActiveExpr f v a ->
 eval d m e = e >>= evalActiveItem d m
 
 emptyMatchState :: MatchState v a
-emptyMatchState = MatchState {atoms = empty, terms = empty, exprs = empty}
+emptyMatchState = MatchState {atoms = M.empty, terms = M.empty, exprs = M.empty}
 
 matchTerm
   :: (Ord v, Eq a)
@@ -196,18 +197,18 @@ matchTerm m (Item (ObjectItem x)) (Expr ((Item y):ts))
   | otherwise  = []
 matchTerm m (Item (AtomVar v)) (Expr ((Item y):ts)) =
   maybe
-    [(m { atoms = insert v y $ atoms m }, Expr ts)]
+    [(m { atoms = M.insert v y $ atoms m }, Expr ts)]
     (\x -> if x == y then [(m, Expr ts)] else [])
     (M.lookup v $ atoms m)
 matchTerm m (Item (TermVar v)) (Expr (t:ts)) =
   maybe
-    [(m { terms = insert v t $ terms m }, Expr ts)]
+    [(m { terms = M.insert v t $ terms m }, Expr ts)]
     (\x -> if x == t then [(m, Expr ts)] else [])
     (M.lookup v $ terms m)
 matchTerm m (Item (ExprVar v)) (Expr ts) =
   maybe
-    (map (\(p, q) -> (m { exprs = insert v (Expr p) $ exprs m }, Expr q)) $ allSplits ts)
-    (\(Expr ps) -> maybe [] (\rs -> [(m, Expr rs)]) $ stripPrefix ps ts)
+    (map (\(p, q) -> (m { exprs = M.insert v (Expr p) $ exprs m }, Expr q)) $ allSplits ts)
+    (\(Expr ps) -> maybe [] (\rs -> [(m, Expr rs)]) $ L.stripPrefix ps ts)
     (M.lookup v $ exprs m)
 matchTerm m (Block p) (Expr ((Block e):ts)) =
   map (\n -> (n, Expr ts)) $ matchWithState m p e
@@ -225,5 +226,9 @@ match = matchWithState emptyMatchState
 applySentence :: (Ord f, Ord v, Eq a) => Semantics f a -> Sentence f v a -> ObjectExpr a -> Maybe (ObjectExpr a)
 applySentence d (Sentence p t) e = fmap (\m -> eval d m t) (listToMaybe $ match p e)
 
-applyFunctionBody :: (Ord f, Ord v, Eq a) => Semantics f a -> FunctionBody f v a -> ObjectExpr a -> Maybe (ObjectExpr a)
-applyFunctionBody d b e = msum $ map (\s -> applySentence d s e) $ sentences b
+applyFunctionBody :: (Ord f, Ord v, Eq a) => Semantics f a -> FunctionBody f v a -> ObjectExpr a -> ObjectExpr a
+applyFunctionBody d b e = fromJust $ msum $ map (\s -> applySentence d s e) $ sentences b
+
+interpretModule :: (Ord f, Ord v, Eq a) => Module f v a -> Semantics f a
+interpretModule (Module m) = d where -- fixed point
+  d = Semantics $ M.empty `M.union` M.map (applyFunctionBody d) m
