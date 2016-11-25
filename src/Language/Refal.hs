@@ -46,7 +46,11 @@ module Language.Refal (
     eval,
 
     -- * Engine
-    match
+    match,
+    applySentence,
+    applyFunctionBody,
+    interpretModule,
+    evalFunctionCall
 ) where
 
 import Data.String.ToString
