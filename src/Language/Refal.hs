@@ -33,13 +33,23 @@ module Language.Refal (
     MatchState(..),
     Semantics(..),
 
+    -- * smart constructors
+    empty,
+    quote,
+    svar,
+    tvar,
+    evar,
+    call,
+    block,
+    (.+.),
+
     -- * Expression conversions
-    objectToPatternTerm,
-    patternToActiveTerm,
-    objectToActiveTerm,
-    objectToPatternExpr,
-    patternToActiveExpr,
-    objectToActiveExpr,
+    ot2p,
+    pt2a,
+    ot2a,
+    oe2p,
+    pe2a,
+    oe2a,
 
     -- * Semantics
     subst,
@@ -132,23 +142,47 @@ instance Monad Expr where
     bindExprHelper (Item x) = f x
     bindExprHelper (Block e1) = Expr [Block (e1 >>= f)]
 
-objectToPatternTerm :: ObjectTerm a -> PatternTerm v a
-objectToPatternTerm = fmap ObjectItem
+empty :: Expr a
+empty = Expr []
 
-patternToActiveTerm :: PatternTerm v a -> ActiveTerm f v a
-patternToActiveTerm = fmap PatternItem
+quote :: [a] -> ObjectExpr a
+quote = Expr . map Item
 
-objectToActiveTerm :: ObjectTerm a -> ActiveTerm f v a
-objectToActiveTerm = fmap (PatternItem . ObjectItem)
+svar :: v -> PatternExpr v a
+svar v = Expr [Item $ AtomVar v]
 
-objectToPatternExpr :: ObjectExpr a -> PatternExpr v a
-objectToPatternExpr = fmap ObjectItem
+tvar :: v -> PatternExpr v a
+tvar v = Expr [Item $ TermVar v]
 
-patternToActiveExpr :: PatternExpr v a -> ActiveExpr f v a
-patternToActiveExpr = fmap PatternItem
+evar :: v -> PatternExpr v a
+evar v = Expr [Item $ ExprVar v]
 
-objectToActiveExpr :: ObjectExpr a -> ActiveExpr f v a
-objectToActiveExpr = fmap (PatternItem . ObjectItem)
+call :: f -> ActiveExpr f v a -> ActiveExpr f v a
+call f e = Expr [Item $ FunctionCall f e]
+
+block :: Expr a -> Expr a
+block e = Expr [Block e]
+
+(.+.) :: Expr a -> Expr a -> Expr a
+(Expr e1) .+. (Expr e2) = Expr (e1 ++ e2)
+
+ot2p :: ObjectTerm a -> PatternTerm v a
+ot2p = fmap ObjectItem
+
+pt2a :: PatternTerm v a -> ActiveTerm f v a
+pt2a = fmap PatternItem
+
+ot2a :: ObjectTerm a -> ActiveTerm f v a
+ot2a = fmap (PatternItem . ObjectItem)
+
+oe2p :: ObjectExpr a -> PatternExpr v a
+oe2p = fmap ObjectItem
+
+pe2a :: PatternExpr v a -> ActiveExpr f v a
+pe2a = fmap PatternItem
+
+oe2a :: ObjectExpr a -> ActiveExpr f v a
+oe2a = fmap (PatternItem . ObjectItem)
 
 -- TODO: pass conversion parameters - string representations of
 -- opening and closing brackets, variable prefixes
