@@ -184,24 +184,30 @@ pe2a = fmap PatternItem
 oe2a :: ObjectExpr a -> ActiveExpr f v a
 oe2a = fmap (PatternItem . ObjectItem)
 
+escape :: [Char] -> Char -> String
+escape cs c = if (c `elem` cs) then ['\\', c] else [c]
+
 -- TODO: pass conversion parameters - string representations of
 -- opening and closing brackets, variable prefixes
 instance (ToString a) => ToString (Term a) where
-  toString (Item a) = toString a
+  toString (Item a) = (toString a) >>= (escape ['\\', '(', ')'])
   toString (Block ts) = "(" ++ (toString ts) ++ ")"
 
 instance (ToString a) => ToString (Expr a) where
   toString = concat . map toString . fromExpr
 
 instance (ToString v, ToString a) => ToString (PatternItem v a) where
-  toString (ObjectItem i) = toString i
-  toString (AtomVar v) = " s." ++ (toString v) ++ " "
-  toString (TermVar v) = " t." ++ (toString v) ++ " "
-  toString (ExprVar v) = " e." ++ (toString v) ++ " "
+  toString (ObjectItem i) = (toString i) >>= (escape ['[', ']'])
+  toString vi = case vi of
+      (AtomVar v) -> makevar 's' v
+      (TermVar v) -> makevar 't' v
+      (ExprVar v) -> makevar 'e' v
+    where
+      makevar c v = '[' : c : '.' : (toString v) ++ "]"
 
 instance (ToString f, ToString v, ToString a) => ToString (ActiveItem f v a) where
-  toString (PatternItem i) = toString i
-  toString (FunctionCall f e) = " <" ++ (toString f) ++ " " ++ (toString e) ++ "> "
+  toString (PatternItem i) = (toString i) >>= (escape ['<', '>'])
+  toString (FunctionCall f e) = "<" ++ (toString f) ++ " " ++ (toString e) ++ ">"
 
 -- TODO: Parsers for the 3 expression types
 
