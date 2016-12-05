@@ -25,8 +25,11 @@ cabal-version:         >=1.10
 
 library
   exposed-modules:     Language.Refal
-  other-modules:       Utils.AllSplits
-  build-depends:       base >=4.8 && <4.9, tostring >=0.2 && <0.3, containers >=0.5 && <0.6
+  other-modules:       Utils.AllSplits, Utils.CharToString
+  build-depends:
+                       base >=4.8 && <4.9,
+                       tostring >=0.2 && <0.3,
+                       containers >=0.5 && <0.6
   hs-source-dirs:      src
   default-language:    Haskell2010
 
@@ -36,6 +39,7 @@ test-suite Spec
   ghc-options:         -Wall -rtsopts
   build-depends:   
                        base >= 4,
+                       tostring >=0.2 && <0.3,
                        HTF > 0.9,
                        refal-hs
   hs-source-dirs:      tests
